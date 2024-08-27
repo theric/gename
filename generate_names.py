@@ -1,19 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#  Written by        : 加菲猫 <callmefeifei@163.com>
-#  Date              : 2020/06/06 20:01:29
-#  Description       : 新生儿起名打分
-
-#  Function support  : * 支持汉字拼音识别
-#                    : * 支持汉字偏旁识别
-#                    : * 支持笔划数识别
-#                    : * 支持重名检测
-#                    : * 支持根据生辰八字调用接口自动对五行进行分析
-
-#  Tips: 
-#  *                     --- 结果仅供参考，希望用到的都能够给自家宝宝起到好名字 ---
-#  * 如该程序对您有所帮助, 请关注作者微信服务号以表支持(搜索: "欧赛安全"), 后续将提供更多有意思的开源代码或在线小工具.
-
 # 配置信息
 from config import settings
 import re
@@ -42,7 +28,7 @@ cjk = CharacterLookup('C')
 
 # 汉字偏旁识别
 from lib.component import *
-
+from lib.request_http import RequestHttp
 from importlib import reload
 reload(sys)
 # sys.setdefaultencoding("utf-8")
@@ -91,6 +77,8 @@ class BabyName():
 
         # 是否检查重名
         self.is_check_duplicate_name = is_check_duplicate_name
+
+        self.requests = RequestHttp(True)
 
 
     # 生成csv文件列名
@@ -188,6 +176,7 @@ class BabyName():
             wuxing = {}
             wuxing["wuxing_miss"] = "无"
             wuxing["wuxing_score"] = "无"
+        print("五行属性为：{}".format(wuxing))
 
         # 整理名字
         if has_limit_word:
@@ -301,11 +290,13 @@ class BabyName():
             params["ie"] = "UTF-8"
 
             try:
-                resp = requests.post(url=url, data=params, headers=self.headers, timeout=10, allow_redirects=False)
+                resp = self.requests.gen_request(url=url,method='POST',params=params,headers=self.headers)
+                # resp = requests.post(url=url, data=params, headers=self.headers, timeout=10, allow_redirects=False)
                 if resp.status_code == 301:
                     next_url = resp.__dict__['headers']['location']
                     print("[request]url={},headers={}".format(next_url,self.headers))
-                    response = requests.get(url=next_url, headers=self.headers, timeout=10)
+                    response = self.requests.gen_request(url=next_url,method='GET',headers=self.headers)
+                    # response = requests.get(url=next_url, headers=self.headers, timeout=10)
                     content = response.content
                     status = response.status_code
                     print("[response]response status={},response body={}".format(status,json.dumps(content.decode("UTF-8"),ensure_ascii=False)))
@@ -359,7 +350,8 @@ class BabyName():
             url = "https://www.meimeiming.com/chachong/{}.html?origin=mmc"
             url = url.format(name)
             print("[request]url={},headers={}".format(url,self.headers))
-            response = requests.get(url=url, headers=self.headers, timeout=10)
+            response = self.requests.gen_request(url=url,headers=self.headers,method='GET')
+            # response = requests.get(url=url, headers=self.headers, timeout=10)
             content = response.content
             status = response.status_code
             print("[response]response status={},response body={}".format(status,json.dumps(content.decode("UTF-8"),ensure_ascii=False)))
@@ -463,11 +455,12 @@ class BabyName():
             # ============================================================
             proxies = self.get_proxy()
 
-            print("[request]url={},data={},headers={},proxy={}".format(self.REQUEST_URL,_data,self.headers,proxies))
-            response = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5, proxies=proxies)
+            # print("[request]url={},data={},headers={},proxy={}".format(self.REQUEST_URL,_data,self.headers,proxies))
+            response = self.requests.gen_request(url=self.REQUEST_URL,method='POST',params=_data,headers=self.headers)
+            # response = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5, proxies=proxies)
             content = response.content
             status = response.status_code
-            print("[response]response status={},response body={}".format(status,json.dumps(content.decode("UTF-8"),ensure_ascii=False)))
+            # print("[response]response status={},response body={}".format(status,json.dumps(content.decode("UTF-8"),ensure_ascii=False)))
             soup = BeautifulSoup(content, 'html.parser')
 
             # 根据生辰八字, 获取命中缺什么, 五行得分
@@ -601,11 +594,12 @@ class BabyName():
             # 获取姓名八字/五格
             # ============================================================
             proxies = self.get_proxy()
-            print("[request]url={},data={},headers={},proxy={}".format(self.REQUEST_URL,_data,self.headers,proxies))
-            response = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5, proxies=proxies)
+            # print("[request]url={},data={},headers={},proxy={}".format(self.REQUEST_URL,_data,self.headers,proxies))
+            response = self.requests.gen_request(url=self.REQUEST_URL,method='POST',params=_data,headers=self.headers)
+            # content = requests.post(url=self.REQUEST_URL, data=_data, headers=self.headers, timeout=5, proxies=proxies)
             content = response.content
             status = response.status_code
-            print("[response]response status={},response body={}".format(status,json.dumps(content.decode("UTF-8"),ensure_ascii=False)))
+            # print("[response]response status={},response body={}".format(status,json.dumps(content.decode("UTF-8"),ensure_ascii=False)))
             soup = BeautifulSoup(content, 'html.parser')
 
             # 姓名五格&八字评分
