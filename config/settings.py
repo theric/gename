@@ -25,24 +25,24 @@ NAME_DICTS["girls_single"] = os.path.abspath(os.path.join(ROOT_PATH, "./dicts/gi
 CONFIG = {}
 # --------------------------------------------------------------------------------------------------------
 # 限定文字(设置后，生成的名字中将固定增加该字)
-CONFIG["limit_world"] = "樗"
+CONFIG["limit_world"] = ""
 # 宝宝姓
-CONFIG["name_prefix"] = "金"
+CONFIG["name_prefix"] = "郭"
 # 宝宝性别
 CONFIG["sex"] = "男"
 # 宝宝出生地(省)
-CONFIG["area_province"] = "广东"
+CONFIG["area_province"] = "河北"
 # 宝宝出生地(市)
-CONFIG["area_region"] = "深圳"
+CONFIG["area_region"] = "秦皇岛"
 # 宝宝出生年份
-CONFIG["year"] = "2024"
+CONFIG["year"] = "2025"
 # 宝宝出生月份
-CONFIG["month"] = "7"
+CONFIG["month"] = "2"
 # 宝宝出生日期
-CONFIG["day"] = "29"
+CONFIG["day"] = "15"
 # 宝宝出生时间
-CONFIG["hour"] = "02"
-CONFIG["minute"] = "49"
+CONFIG["hour"] = "01"
+CONFIG["minute"] = "01"
 
 # 输出文件
 CONFIG["output_fname"] = "baby_names.csv"

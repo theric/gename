@@ -29,7 +29,6 @@ import random
 import requests
 import codecs
 
-import gevent
 # from gevent import monkey
 # monkey.patch_all(ssl=False)
 from bs4 import BeautifulSoup
@@ -54,7 +53,7 @@ proxies = {
 }
 
 class BabyName():
-    def __init__(self, config={}, name_dict={}, is_score=True, use_proxy=False, is_check_component=False, component_preferences="", component_list=[], is_check_duplicate_name=False, max_thread=5, is_filter_out=False):
+    def __init__(self, use_proxy=False,  is_check_duplicate_name = False):
         # 根目录
         self.ROOTDIR = (os.path.dirname(os.path.realpath(__file__)))
 
@@ -63,10 +62,10 @@ class BabyName():
         self.component = Component(dictionary_filepath=self.dictionary_filepath)
 
         # 系统配置
-        self.CONFIG = config
+        self.CONFIG = settings.CONFIG
 
         # 姓名字典
-        self.NAME_DICT = name_dict
+        self.NAME_DICT = settings.NAME_DICTS
 
         # Headers头
         self.headers = {
@@ -80,24 +79,19 @@ class BabyName():
         self.result_output = self.CONFIG['output_fpath']
 
         # 是否打分
-        self.is_score = is_score
+        self.is_score = True
 
         # 使用代理
         self.use_proxy = use_proxy
 
         # 是否检查偏旁
-        self.is_check_component = is_check_component 
-        self.component_preferences = component_preferences   # 偏旁偏好
-        self.component_list = component_list                 # 金木水火土对应汉字列表
+        self.is_check_component = True
+        self.component_preferences = "" # 偏旁偏好
+        self.component_list = []                 # 金木水火土对应汉字列表
 
         # 是否检查重名
         self.is_check_duplicate_name = is_check_duplicate_name
 
-        # 是否过滤重名数为零的
-        self.is_filter_out = is_filter_out
-
-        # 最大线程数
-        self.max_thread = max_thread
 
     # 生成csv文件列名
     def generate_field(self, _filename="./egg.csv", _fieldnames=['first_name', 'last_name']):
@@ -115,7 +109,6 @@ class BabyName():
         with open(_filename, 'a+') as csvfile:
             # 列名
             fieldnames = _fieldnames
-            # csvfile.write(codecs.BOM_UTF8)
 
             # 写csv文件
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames, dialect='excel')
@@ -124,8 +117,8 @@ class BabyName():
     def get_proxy(self):
         if self.use_proxy:
             # 代理服务器
-            proxyHost = "218.87.205.107"
-            proxyPort = "16415"
+            proxyHost = "47.97.9.53"
+            proxyPort = "80"
 
             # # 代理隧道验证信息
             # proxyUser = "2120061600001000956"
@@ -370,7 +363,9 @@ class BabyName():
             content = response.content
             status = response.status_code
             print("[response]response status={},response body={}".format(status,json.dumps(content.decode("UTF-8"),ensure_ascii=False)))
-
+            names_total = 0
+            boys_total = 0
+            girls_total = 0
             # 解析同名数量
             soup = BeautifulSoup(content, 'html.parser')
             for node in soup.find_all("div", class_="to-ceming"):
@@ -388,10 +383,8 @@ class BabyName():
                     boys_total = match.group(1)
                     match = re.search(girl_re, node_cont)
                     girls_total = match.group(1)
-                else:
-                    names_total = 0
-                    boys_total = 0
-                    girls_total = 0
+
+
 
             # 名字性别偏向
             name_sex = ""
@@ -602,14 +595,7 @@ class BabyName():
         result_data["mingzhuxingxiu"] = "X"
         result_data['total_score'] = 100
 
-        # # 过滤掉重名为0的.
-        # if self.is_filter_out:
-        #     if names_total == '0人':
-        #         return False
 
-        # 根绝性别设置筛选对应性别的姓名
-        # if self.CONFIG["sex"] != name_sex:
-        #     return False
 
         if self.is_score:
             # 获取姓名八字/五格
@@ -657,30 +643,8 @@ class BabyName():
         bihua = 0
         for s in name_postfix:
             bihua += self.get_stroke(s)
-        # # 识别笔划数
-        # if len(name_postfix) > 3:
-        #     _pinyin = pinyin(u'%s' % name_postfix)[0][0] + pinyin(u'%s' % name_postfix)[1][0]
-        #     try:
-        #         bihua = cjk.getStrokeCount(u"%s" % name_postfix[:3]) + cjk.getStrokeCount(u"%s" % name_postfix[-3:])
-        #     except:
-        #         bihua = 0
-        #
-        # else:
-        #     _pinyin = pinyin(u'%s' % name_postfix)[0][0]
-        #     try:
-        #         bihua = cjk.getStrokeCount(u"%s" % name_postfix[-3:])
-        #     except:
-        #         bihua = 0
-
-        # 开始评估
-
-        # 以名字的后缀作为参数进行计算
-        name_data_dict = False
-        count = 0
 
         name_data_dict = self.compute_name_score(name_postfix)
-
-
 
         if not name_data_dict:
             return False
@@ -761,7 +725,7 @@ class BabyName():
     def get_stroke(self,c):
         # 如果返回 0, 则也是在unicode中不存在kTotalStrokes字段
         strokes = []
-        strokes_path = '/Users/dongxu.zhao1/githome/baby-names/docs/strokes.txt'
+        strokes_path = './docs/strokes.txt'
         with open(strokes_path, 'r') as fr:
             for line in fr:
                 strokes.append(int(line.strip()))
@@ -778,36 +742,16 @@ class BabyName():
 
 
 if __name__ == "__main__":
-    """
-    Tips:
-                ---- 程序仅供参考，祝大家能够给自己宝宝起到好名字 ----
-        1. 运行前, 先配置config/settings.py中相关配置, 如出生日期、姓氏等.
-        2. 打分接口可能会有变化或随着时间长久失效, 调试替换其他接口即可.
-        3. 部分接口请求次数过多可能会被封IP, 推荐购买使用 "猿人云" 提供的动态转发代理, 并替换本文件get_proxy方法中的授权信息即可. (可使用我的推广链接申请: https://ape.vip/T-ovAUDi)
-    最后, 如该程序对您有所帮助, 请关注作者微信服务号以表支持(搜索: "欧赛安全"), 后续将提供更多有意思的开源代码或在线小工具.
-    """
-
-    # 是否进行打分
-    is_score = True
 
     # 是否使用代理
     use_proxy = True
 
-    # 是否检查命格缺失?
-    is_check_component = True
-    component_preferences = "木" # is_check_component设置为True时会自动判断.
-    component_list = settings.MU # 木命对应的名字
-
     # 是否检查重名
     is_check_duplicate_name = True
 
-    # 是否过滤掉重名数为零的(设置为True, renren网查不到的将不显示) 
-    is_filter_out = True
 
-    # 最大线程数
-    max_thread = 1
 
-    babyname = BabyName(config=settings.CONFIG, name_dict=settings.NAME_DICTS, is_score=is_score, use_proxy=use_proxy, is_check_component=is_check_component, component_preferences=component_preferences, component_list=component_list, is_check_duplicate_name=is_check_duplicate_name, max_thread=max_thread, is_filter_out=is_filter_out)
+    babyname = BabyName( use_proxy=use_proxy, is_check_duplicate_name=is_check_duplicate_name)
     babyname.run()
 
 
